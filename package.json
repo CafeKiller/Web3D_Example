@@ -1,0 +1,25 @@
+{
+  "name": "mateshop",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "ant-design-vue": "^2.2.8",
+    "axios": "^0.24.0",
+    "three": "^0.136.0",
+    "unplugin-vue-components": "^0.17.11",
+    "vue": "^3.3.4",
+    "vue-router": "^4.0.12",
+    "vuex": "^4.0.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.2.3",
+    "less": "^4.1.2",
+    "vite": "^4.4.5"
+  }
+}
