@@ -1,0 +1,128 @@
+import {
+    System,
+    decorators,
+    ComponentChanged,
+    OBSERVER_TYPE,
+} from "@eva/eva.js";
+import EventEmitter from "eventemitter3";
+import EvaXComponent from "./EvaXComponent";
+import { defineProperty, updateStore } from "./util"
+
+export interface EvaXSystemParams {
+    store: {
+        [key: string]: any;
+    };
+}
+
+@decorators.componentObserver({
+    EvaX: [],
+})
+export default class EvaXSystem extends System<EvaXSystemParams> {
+    static systemName = "EvaX";
+    public store: any;
+    private ee: EventEmitter;
+    changeList: { key: string; oldStore: any }[] = [];
+
+    init({ store = {} } = { store: {} }) {
+        this.ee = new EventEmitter();
+        this.store = store;
+        this.bindDefaultListener();
+    }
+    bindDefaultListener() {
+        this.ee.on("evax.updateStore", (store) => {
+            this.updateStore(store);
+        });
+        this.ee.on("evax.forceUpdateStore", (store) => {
+            this.forceUpdateStore(store);
+        });
+    }
+    changeCallback(key: string, oldStore: any) {
+        this.changeList.push({
+            key: key as string,
+            oldStore: oldStore as any,
+        });
+    }
+    updateStore(store: any) {
+        updateStore(this.store, store, false);
+    }
+    forceUpdateStore(store: any) {
+        updateStore(this.store, store, true);
+    }
+    bindListener(key: string, deep: boolean) {
+        if (key.indexOf("store.") === -1) {
+            return;
+        }
+        const realKey = key.split(".").slice(1).join(".");
+        console.log(realKey, key);
+        defineProperty(
+            realKey,
+            deep,
+            this.store,
+            key,
+            this.store,
+            (key: string, oldStore: any) => this.changeCallback(key, oldStore)
+        );
+    }
+    update() {
+        const changes = this.componentObserver.clear();
+        for (const changed of changes) {
+            switch (changed.type) {
+                case OBSERVER_TYPE.ADD:
+                    this.add(changed);
+                    break;
+                // case OBSERVER_TYPE.CHANGE:
+                //   this.change(changed)
+                //   break;
+                case OBSERVER_TYPE.REMOVE:
+                    this.remove(changed);
+                    break;
+            }
+        }
+    }
+    lateUpdate() {
+        for (const item of this.changeList) {
+            const list = item.key.split(".");
+            let value: any = this;
+            for (let i = 0; i < list.length; i++) {
+                value = value[list[i]];
+            }
+            this.ee.emit(item.key, value, item.oldStore);
+        }
+        this.changeList = [];
+    }
+    add(changed: ComponentChanged) {
+        const component = changed.component as EvaXComponent;
+        component.evax = this;
+        for (const key in component.events) {
+            if (component.events[key]) {
+                this.bindListener(key, !!component.events[key].deep);
+                let func;
+                if (component.events[key] instanceof Function) {
+                    func = component.events[key];
+                } else {
+                    func = component.events[key].handler;
+                }
+                this.ee.on(key, func.bind(component));
+            }
+        }
+    }
+    remove(changed: ComponentChanged) {
+        const component = changed.component as EvaXComponent;
+        for (const key in component.events) {
+            if (component.events[key] instanceof Function) {
+                this.ee.off(key, component.events[key].bind(component));
+            }
+        }
+    }
+    on(eventName: any, func: (...args: any[]) => void) {
+        return this.ee.on(eventName, func, this);
+    }
+    off(eventName: any, func: (...args: any[]) => void) {
+        return this.ee.off(eventName, func);
+    }
+    emit(eventName: any, ...args: any[]) {
+        console.log("触发", eventName, ...args);
+        return this.ee.emit(eventName, ...args);
+    }
+    onDestroy() {}
+}

@@ -20,7 +20,7 @@ resource.addResource(sources as resourceType[])
 // 资源加载进度更新
 resource.on(LOAD_EVENT.PROGRESS, (value) => {
     console.log(`进度加载: ${value.progress * 100}%`)
-    document.querySelector("#progress").nodeValue = value.progress
+    document.querySelector("#progress").innerHTML = value.progress
 })
 
 // 资源加载完成
@@ -70,13 +70,13 @@ let listen: () => void
 listen = () => {
     const { game } = store
 
-    const title = game.scene.gameObject.find(
+    const title = game.scene.gameObjects.find(
         (item:any) => item.name === "ready-title"
     );
-    const taps = game.scene.gameObject.find(
+    const taps = game.scene.gameObjects.find(
         (item:any) => item.name === "ready-taps"
     );
-    const bird = game.scene.gameObject.find(
+    const bird = game.scene.gameObjects.find(
         (item:any) => item.name === "bird"
     )
 
@@ -141,7 +141,7 @@ listen = () => {
 
         // 移除结束标题按钮
         // get ready
-        const overBox = game.score.gameObject.find(
+        const overBox = game.scene.gameObjects.find(
             (item:any) => item.name === "overBox"
         )
         game.scene.removeChild(overBox)
@@ -155,7 +155,7 @@ listen = () => {
         bird.transform.position.y = 640
 
         // 删除所有管道
-        const pipes = game.scene.gameObject.filter(
+        const pipes = game.scene.gameObjects.filter(
             (item:any) => item.name === "bar"
         )
         pipes.forEach((pipe:any) => {
